@@ -1,0 +1,555 @@
+<html>
+<head>
+<title>Live Play</title>
+<!-- This page will deal a number of hands.  
+     It will calculate win percentages and display win percents. -->
+<script src="jquery-3.1.1.min.js"></script>
+<script src="SpicyLibrary.js"></script>
+<script src="card.js"></script>
+<script src="deck.js"></script>
+<script src="hand.js"></script>
+<style>
+.cards {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+.input_block {
+    display: inline-block;
+    margin-right: 20px;
+}
+label {
+    display: block;
+}
+#params {
+    display: inline-block;
+    min-width: 175px;
+    margin-bottom: 10px;
+}
+#iterations {
+    width: 75px;
+    text-align: center;
+}
+.card_input {
+    width: 25px;
+    margin: 0px 3px 0px 3px;
+    text-align: center;
+}
+.cards_input {
+    display: inline-block;
+    margin-right: 20px;
+}
+#run_time {
+    display: inline-block;
+}
+#error_message {
+    font-size: 1.5em;
+    color: red;
+}
+#players {
+    border-collapse: collapse;
+}
+#players td, #players th {
+    border-bottom: 1px solid #DDDDDD;
+    border-right: 1px solid #DDDDDD;
+    padding: 5px;
+}
+.wins {
+    width: 75px;
+    text-align: right;
+}
+.straightFlush, .fourOfAKind, .fullHouse, .flush, 
+.straight, .threeOfAKind, .twoPair, .pair {
+    width: 115px;
+    text-align: right;
+}
+.hole {
+    width: 80px;
+    text-align: center;
+}
+#players tbody tr:hover {
+    background-color: #EEEEEE;
+}
+</style>
+</head>
+<body>
+<fieldset id="params">
+    <legend>Params</legend>
+    <div class="input_block">
+        <label for="iterations">Iterations</label>
+        <input type="text" id="iterations" value="5000" />
+    </div>
+    <fieldset class="cards_input">
+        <legend>Flop</legend>
+        <input type="text" id="flop1" class="card_input" maxlength="2" />
+        <input type="text" id="flop2" class="card_input" maxlength="2" />
+        <input type="text" id="flop3" class="card_input" maxlength="2" />
+    </fieldset>
+    <div class="input_block">
+        <label for="turn">Turn</label>
+        <input type="text" id="turn" class="card_input" maxlength="2" />
+    </div>
+    <div class="input_block">
+        <label for="river">River</label>
+        <input type="text" id="river" class="card_input" maxlength="2" />
+    </div>
+    <div class="input_block">
+        <label>&nbsp;</label>
+        <button type="button" id="run_simulation">Run</button>
+    </div>
+</fieldset>
+<div id="run_time"></div>
+<div id="error_message"></div>
+<table id="players">
+    <thead>
+        <tr>
+            <th>Player</th>
+            <th>Hole</th>
+            <th>Win %</th>
+            <th>Straight Flush</th>
+            <th>Four of a Kind</th>
+            <th>Full House</th>
+            <th>Flush</th>
+            <th>Straight</th>
+            <th>Three of a Kind</th>
+            <th>Two Pair</th>
+            <th>Pair</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr id="player_1">
+            <th class="player_number">1</th>
+            <td class="hole">
+                <input type="text" id="player_1_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_1_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_2">
+            <th class="player_number">2</th>
+            <td class="hole">
+                <input type="text" id="player_2_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_2_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_3">
+            <th class="player_number">3</th>
+            <td class="hole">
+                <input type="text" id="player_3_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_3_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_4">
+            <th class="player_number">4</th>
+            <td class="hole">
+                <input type="text" id="player_4_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_4_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_5">
+            <th class="player_number">5</th>
+            <td class="hole">
+                <input type="text" id="player_5_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_5_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_6">
+            <th class="player_number">6</th>
+            <td class="hole">
+                <input type="text" id="player_6_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_6_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_7">
+            <th class="player_number">7</th>
+            <td class="hole">
+                <input type="text" id="player_7_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_7_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_8">
+            <th class="player_number">8</th>
+            <td class="hole">
+                <input type="text" id="player_8_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_8_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_9">
+            <th class="player_number">9</th>
+            <td class="hole">
+                <input type="text" id="player_9_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_9_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+        <tr id="player_10">
+            <th class="player_number">10</th>
+            <td class="hole">
+                <input type="text" id="player_10_hole_1" class="hole_1 card_input" maxlength="2" />
+                <input type="text" id="player_10_hole_2" class="hole_2 card_input" maxlength="2" />
+            </td>
+            <td class="wins"></td>
+            <td class="straightFlush"></td>
+            <td class="fourOfAKind"></td>
+            <td class="fullHouse"></td>
+            <td class="flush"></td>
+            <td class="straight"></td>
+            <td class="threeOfAKind"></td>
+            <td class="twoPair"></td>
+            <td class="pair"></td>
+        </tr>
+    </tbody>
+</table>
+<script type="text/javascript">
+    $(document).ready(function() {
+        setupInput();
+    });
+
+    var handTypes = ["straightFlush", "fourOfAKind", "fullHouse", "flush", 
+                     "straight", "threeOfAKind", "twoPair", "pair"];
+
+    var setupInput = function() {
+        $("#run_simulation").click(function() {
+            var input = processInput();
+            if (input.isValid) {
+                runSimulation(input);
+            }
+        });
+        $(".player_number").click(function() {
+            var row = $(this).closest("tr");
+            row.find(".hole_1").val('');
+            row.find(".hole_2").val('');
+        });
+    };
+
+    var runSimulation = function(input) {
+        var timeStart = new Date().getTime(), timeEnd, runTime;
+        var keepFlop = input.flop1 ? true : false;
+        var flop = keepFlop ? [input.flop1, input.flop2, input.flop3] : [];
+        var keepTurn = input.turn ? true : false;
+        var turn = keepTurn ? input.turn : undefined;
+        var keepRiver = input.river ? true : false;
+        var river = keepRiver ? input.river : undefined;
+        var hands =[];
+        var i, iter, iterations = keepRiver ? 1 : input.iterations;
+        var lowRank;
+        var results = createResults();
+        var deck = TYPES.deck();
+
+        input.holes.forEach(function(hole) {
+            deck.removeCard(hole.hole1);
+            deck.removeCard(hole.hole2);
+            results[hole.player].isActive = true;
+        });
+        if (keepFlop) {
+            deck.removeCard(flop[0]);
+            deck.removeCard(flop[1]);
+            deck.removeCard(flop[2]);
+        }
+        if (keepTurn) {
+            deck.removeCard(turn);
+        }
+        if (keepRiver) {
+            deck.removeCard(river);
+        }
+
+        for (iter = 0; iter < iterations; iter++) {
+            deck.shuffle();
+            if (!keepFlop) {
+                flop[0] = deck.draw();
+                flop[1] = deck.draw();
+                flop[2] = deck.draw();
+            }
+            if (!keepTurn) {
+                turn = deck.draw();
+            }
+            if (!keepRiver) {
+                river = deck.draw();
+            }
+
+            hands = [];
+            input.holes.forEach(function(hole) {
+                hands.push({
+                    player: hole.player,
+                    hand: TYPES.hand({
+                        "hole": [hole.hole1, hole.hole2],
+                        "flop": flop,
+                        "turn": turn,
+                        "river": river
+                    })
+                });
+            });
+
+            lowRank = 2000000;
+            hands.forEach(function(hand) {
+                if (hand.hand.getRank() < lowRank) {
+                    lowRank = hand.hand.getRank();
+                }
+            });
+
+            hands.forEach(function(hand) {
+                if (hand.hand.getRank() === lowRank) {
+                    results[hand.player].wins++;
+                }
+                handTypes.forEach(function(handType) {
+                    if (hand.hand.isHandType(handType)) {
+                        results[hand.player][handType]++;
+                    }
+                });
+            });
+
+            if (!keepRiver) {
+                deck.returnCard(river);
+            }
+            if (!keepTurn) {
+                deck.returnCard(turn);
+            }
+            if (!keepFlop) {
+                deck.returnCard(flop[0]);
+                deck.returnCard(flop[1]);
+                deck.returnCard(flop[2]);
+            }
+        }
+
+        results.forEach(function(result) {
+            var cellValue;
+            if (result && result.isActive) {
+                cellValue = result.wins / iterations * 100;
+                $("#player_"+result.player).find(".wins").text(cellValue.toFixed(1) + " %");
+                handTypes.forEach(function(handType) {
+                    cellValue = result[handType] / iterations * 100;
+                    $("#player_"+result.player).find("."+handType).text(cellValue.toFixed(1) + " %");
+                });
+            } 
+            else {
+                $("#player_"+result.player).find(".wins").text('');
+                handTypes.forEach(function(handType) {
+                    $("#player_"+result.player).find("."+handType).text('');
+                });                
+            }
+        });
+
+        var timeEnd = new Date().getTime();
+        runTime = (timeEnd - timeStart) / 1000;
+        $("#run_time").text(runTime + ' seconds');
+    };
+
+    var createResults = function() {
+        var retval = [];
+        var i, entry;
+        for (i = 1; i <= 10; i++) {
+            entry = {
+                isActive: false,
+                player: i,
+                wins: 0,
+            };
+            handTypes.forEach(function(handType) {
+                entry[handType] = 0;
+            });
+            retval[i] = entry;
+        }
+        return retval;
+    };
+
+    var processInput = function() {
+        var holes = [], hole1, hole2, hole1Card, hole2Card;
+        var iterations = $("#iterations").val();
+        var flop1 = $("#flop1").val(), flop1Card;
+        var flop2 = $("#flop2").val(), flop2Card;
+        var flop3 = $("#flop3").val(), flop3Card;
+        var turn = $("#turn").val(), turnCard;
+        var river = $("#river").val(), riverCard;
+        var retval = { 
+            isValid: false,
+            iterations: 0,
+            holes: [],
+            flop1: undefined,
+            flop2: undefined,
+            flop3: undefined,
+            turn: undefined,
+            river: undefined,
+        };
+        var i;
+
+        setErrorMessage('');
+
+        if (!iterations || isNaN(iterations * 1)) {
+            setErrorMessage("Iterations is not a number.");
+            return retval;
+        }
+        if (iterations < 1) {
+            setErrorMessage("Iterations must be greater than 0.");
+            return retval;
+        }
+        retval.iterations = iterations;
+
+        if ((flop1 || flop2 || flop3) && (!flop1 || !flop2 || !flop3)) {
+            console.log("flop1: ", flop1);
+            console.log("flop2: ", flop2);
+            console.log("flop3: ", flop3);
+            setErrorMessage("All three flop cards are required if any are supplied.");
+            return retval;
+        }
+        if (flop1) {
+            flop1Card = TYPES.card(flop1);
+            flop2Card = TYPES.card(flop2);
+            flop3Card = TYPES.card(flop3);
+            if (flop1Card.getGrade() <= 0) {
+                setErrorMessage("Invalid 1st flop card.");
+                return retval;
+            }
+            if (flop2Card.getGrade() <= 0) {
+                setErrorMessage("Invalid 2nd flop card.");
+                return retval;
+            }
+            if (flop3Card.getGrade() <= 0) {
+                setErrorMessage("Invalid 3rd flop card.");
+                return retval;
+            }
+            retval.flop1 = flop1Card;
+            retval.flop2 = flop2Card;
+            retval.flop3 = flop3Card;
+        }
+        if (turn && !flop1) {
+            setErrorMessage("Flop cards are required in order to supply a turn.");
+            return retval;
+        }
+        if (turn) {
+            turnCard = TYPES.card(turn);
+            if (turnCard.getGrade() <= 0) {
+                setErrorMessage("Invalid turn card.");
+                return retval;
+            }
+            retval.turn = turnCard;
+        }
+        if (river && !turn) {
+            setErrorMessage("A turn card is required in order to supply a river.");
+            return retval;
+        }
+        if (river) {
+            riverCard = TYPES.card(river);
+            if (riverCard.getGrade() <= 0) {
+                setErrorMessage("Invalid river card.");
+                return retval;
+            }
+            retval.river = riverCard;
+        }
+
+        for(i = 1; i <= 10; i++) {
+            hole1 = $("#player_"+i+"_hole_1").val();
+            hole2 = $("#player_"+i+"_hole_2").val();
+            if ((hole1 || hole2) && (!hole1 || !hole2)) {
+                setErrorMessage("Player " + i + ": Both hole cards are required if any are given.");
+                return retval;
+            }
+            if (hole1) {
+                hole1Card = TYPES.card(hole1);
+                hole2Card = TYPES.card(hole2);
+                if (hole1Card.getGrade() <= 0) {
+                    setErrorMessage("Player " + i + ": Invalid 1st hole card.");
+                    return retval;
+                }
+                if (hole2Card.getGrade() <= 0) {
+                    setErrorMessage("Player " + i + ": Invalid 2nd hole card.");
+                    return retval;
+                }
+                retval.holes.push({
+                    hole1: hole1Card,
+                    hole2: hole2Card,
+                    player: i,
+                });
+            }
+        }
+
+        if (retval.holes.length < 1) {
+            setErrorMessage("At least one set of hole cards is required.");
+            return retval;
+        }
+
+        retval.isValid = true;
+        return retval;
+    };
+
+    var setErrorMessage = function(message) {
+        $("#error_message").text(message);
+    };
+</script>
+</body>
+</html>

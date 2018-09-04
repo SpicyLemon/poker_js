@@ -1,0 +1,186 @@
+<html>
+<head>
+<title>Test Deal</title>
+<!-- This will deal a single hand and display all the hand info for each player. -->
+<script src="jquery-3.1.1.min.js"></script>
+<script src="SpicyLibrary.js"></script>
+<script src="card.js"></script>
+<script src="deck.js"></script>
+<script src="hand.js"></script>
+<style>
+.cards {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+#hands {
+    border-collapse: collapse;
+}
+#hands, #hands th, #hands td {
+    border: 1px solid grey;
+    padding: 2px 5px 2px 5px;
+}
+#fs_flop, #fs_turn, #fs_river {
+    display: inline-block;
+}
+#board {
+    display: inline-block;
+    margin-bottom: 10px;
+}
+</style>
+</head>
+<body>
+<fieldset id="board">
+    <legend>Board</legend>
+    <fieldset id="fs_flop">
+        <legend>Flop</legend>
+        <span class="cards" id="flop1"></span>
+        <span class="cards" id="flop2"></span>
+        <span class="cards" id="flop3"></span>
+    </fieldset>
+    <fieldset id="fs_turn">
+        <legend>Turn</legend>
+        <span class="cards" id="turn"></span>
+    </fieldset>
+    <fieldset id="fs_river">
+        <legend>River</legend>
+        <span class="cards" id="river"></span>
+    </fieldset>
+</fieldset>
+<table id="hands">
+    <thead>
+        <tr>
+            <th class="player">#</th>
+            <th class="pocket_cards">Pocket</th>
+            <th class="all_cards">Cards</th>
+            <th class="hand_name">Hand Name</th>
+            <th class="hand_rank">Hand Rank</th>
+            <th class="hand_straightFlush">Straight Flush</th>
+            <th class="hand_fourOfAKind">Four of a Kind</th>
+            <th class="hand_fullHouse">Full House</th>
+            <th class="hand_flush">Flush</th>
+            <th class="hand_straight">Straight</th>
+            <th class="hand_threeOfAKind">Three of a Kind</th>
+            <th class="hand_twoPair">Two Pair</th>
+            <th class="hand_pair">Pair</th>
+            <th class="hand_highCard">High Card</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr id="hand_row_to_copy" class="hand_row" style="display: none;">
+            <td class="player"></td>
+            <td class="cards pocket"></td>
+            <td class="cards all_cards"></td>
+            <td class="hand_name"></td>
+            <td class="hand_rank"></td>
+            <td class="cards hand_straightFlush"></td>
+            <td class="cards hand_fourOfAKind"></td>
+            <td class="cards hand_fullHouse"></td>
+            <td class="cards hand_flush"></td>
+            <td class="cards hand_straight"></td>
+            <td class="cards hand_threeOfAKind"></td>
+            <td class="cards hand_twoPair"></td>
+            <td class="cards hand_pair"></td>
+            <td class="cards hand_highCard"></td>
+        </tr>
+    </tbody>
+</table>
+<script type="text/javascript">
+    $(document).ready(function() {
+        var numberOfPlayers = 10;
+        var pockets = dim([numberOfPlayers, 2], undefined);
+        var burn = [], flop = [], turn, river;
+        var hands = [];
+        var handDef = {};
+        var i;
+        
+        var deck = TYPES.deck();
+        deck.shuffle();
+        
+        for(i = 0; i < numberOfPlayers; i++) {
+            pockets[i][0] = deck.draw();
+            pockets[i][1] = deck.draw();
+        }
+        burn[0] = deck.draw();
+        flop[0] = deck.draw();
+        flop[1] = deck.draw();
+        flop[2] = deck.draw();
+        burn[1] = deck.draw();
+        turn = deck.draw();
+        burn[2] = deck.draw();
+        river = deck.draw();
+        
+        for(i = 0; i < numberOfPlayers; i++) {
+            handDef.hole = pockets[i];
+            handDef.flop = flop;
+            handDef.turn = turn;
+            handDef.river = river;
+            hands.push({
+                index: i + 1,
+                hand: TYPES.hand(handDef),
+                hole: handDef.hole,
+            });
+        }
+        
+        hands.sort(function(a, b) {
+            return a.hand.getRank() - b.hand.getRank();
+        });
+        
+        $("#flop1").text(flop[0].toString());
+        $("#flop2").text(flop[1].toString());
+        $("#flop3").text(flop[2].toString());
+        $("#turn").text(turn.toString());
+        $("#river").text(river.toString());
+        
+        hands.forEach(function(hand) {
+            addHandToTable(hand.index, hand.hand, hand.hole);
+        });
+        
+        for(i = 0; i < numberOfPlayers; i++) {
+            deck.returnCard(hands[i].hole[0]);
+            deck.returnCard(hands[i].hole[1]);
+        }
+        deck.returnCard(burn[0]);
+        deck.returnCard(burn[1]);
+        deck.returnCard(burn[2]);
+        deck.returnCard(flop[0]);
+        deck.returnCard(flop[1]);
+        deck.returnCard(flop[2]);
+        deck.returnCard(turn);
+        deck.returnCard(river);
+        
+        if (deck.isComplete()) {
+            console.log("Wooo! The deck is back to complete!");
+        }
+        else {
+            console.log("Crap. We're missing cards.");
+            console.log("It's got " + deck.getSize() + " cards in it: ");
+            console.log(Deck.toString());
+        }
+    });
+    
+    var hand_types = ["straightFlush", "fourOfAKind", "fullHouse", "flush", 
+                      "straight", "threeOfAKind", "twoPair", "pair", "highCard"];
+                      
+    var addHandToTable = function(i, hand, pocketCards) {
+        var newRow = $("#hand_row_to_copy").clone();
+        newRow.removeAttr("id");
+        newRow.find(".player").text(i);
+        newRow.find(".pocket").text(pocketCards[0].toString() + " " + pocketCards[1].toString());
+        newRow.find(".all_cards").text(hand.getAllCardsString());
+        newRow.find(".hand_name").text(hand.getHandName());
+        newRow.find(".hand_rank").text(hand.getRank());
+        hand_types.forEach(function(handType) {
+            var handCell = newRow.find(".hand_" + handType);
+            handCell.text(hand.getCardsPlayedString(handType));
+            if (hand.isHandType(handType)) {
+                handCell.css("background-color", "#99FF99")
+            }
+            else {
+                handCell.css("background-color", "#FFCCDD")
+            }
+        });
+        $("#hands").append(newRow);
+        newRow.show();
+    };
+</script>
+</body>
+</html>

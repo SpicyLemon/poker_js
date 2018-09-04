@@ -1,0 +1,345 @@
+<html>
+<head>
+<title>Rank Pockets</title>
+<!-- This page will deal a number of hands.  
+     It will calculate win percentages and display a ranking list of hands. -->
+<script src="jquery-3.1.1.min.js"></script>
+<script src="SpicyLibrary.js"></script>
+<script src="card.js"></script>
+<script src="deck.js"></script>
+<script src="hand.js"></script>
+<style>
+.cards {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+.suited {
+    background-color: #BBBBBB;
+}
+.paired {
+    background-color: #DDDDDD;
+}
+.input_block {
+    display: inline-block;
+    margin-right: 20px;
+}
+label {
+    display: block;
+}
+#params {
+    display: inline-block;
+    min-width: 175px;
+    margin-bottom: 10px;
+}
+#iterations {
+    width: 75px;
+    text-align: center;
+}
+#player_count {
+    width: 50px;
+    text-align: center;
+}
+#odds {
+    margin: 10px;
+    border-collapse: collapse;
+}
+#odds th, #odds td {
+    border: 1px solid black;
+    padding: 5px;
+}
+.table_highlight, #odds td:hover {
+    background-color: yellow;
+}
+#run_time {
+    display: inline-block;
+}
+#error_message {
+    font-size: 1.5em;
+    color: red;
+}
+#ranks {
+    margin: 10px;
+    border-collapse: collapse;
+}
+#ranks th, #ranks td {
+    padding: 5px;
+    text-align: center;
+}
+#ranks td.win_percent {
+    text-align: right;
+    padding-right: 15px;
+}
+#ranks tr {
+    border-bottom: 1px solid #BBBBBB;
+}
+</style>
+</head>
+<body>
+<fieldset id="params">
+    <legend>Params</legend>
+    <div class="input_block">
+        <label for="iterations">Iterations</label>
+        <input type="text" id="iterations" value="5" />
+    </div>
+    <div class="input_block">
+        <label for="player_count">Players</label>
+        <input type="text" id="player_count" value="9" />
+    </div>
+    <div class="input_block">
+        <label>&nbsp;</label>
+        <button type="button" id="run_simulation">Run</button>
+    </div>
+</fieldset>
+<div id="run_time"></div>
+<div id="error_message"></div>
+<table id="odds">
+</table>
+<table id="ranks">
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Hand</th>
+            <th>Win Percent</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr id="rank_row_to_copy" class="rank_row" style="display: none;">
+            <td class="rank"></td>
+            <td class="cards hand"></td>
+            <td class="win_percent"></td>
+        </tr>
+    </tbody>
+</table>
+<script type="text/javascript">
+    $(document).ready(function() {
+        createTable();
+        setupInput();
+    });
+    
+    var grades = ["A","K","Q","J","T","9","8","7","6","5","4","3","2"];
+    var createTable = function() {
+        var labels, head, body, foot;
+        labels = '<tr><th></th>';
+        grades.forEach(function(rank) {
+            labels += '<th>' + rank + '</th>';
+        });
+        labels += '<th></th></tr>';
+        head = '<thead>' + labels + '</thead>';
+        foot = '<tfoot>' + labels + '</tfoot>';
+        body = '<tbody>';
+        grades.forEach(function(rowRank) {
+            var row = '<tr><th>' + rowRank + '</th>';
+            var right = false;
+            grades.forEach(function(colRank) {
+                var cell = right ? rowRank + colRank : colRank + rowRank;
+                var clazz = right ? "suited" : rowRank === colRank ? "paired" : "";
+                var id = right ? "suited_" + cell : cell;
+                row += '<td class="'+clazz+'" id="'+id+'">'+cell+'</td>';
+                if (rowRank === colRank) {
+                    right = true;
+                }
+            });
+            row += '<th>' + rowRank + '</th></tr>';
+            body += row;
+        });
+        $('#odds').html(head+body+foot);
+        $('#odds td').on('mouseenter mouseleave', function() {
+            var col = $(this);
+            var index = col.index();
+            col.parent('tr').find('th').each(function (i, ele) {
+                $(ele).toggleClass('table_highlight');
+            });
+            col.closest('table').find('thead').find('th').each(function (i, ele) {
+                if (i === index) {
+                    $(ele).toggleClass('table_highlight');
+                }
+            });
+            col.closest('table').find('tfoot').find('th').each(function (i, ele) {
+                if (i === index) {
+                    $(ele).toggleClass('table_highlight');
+                }
+            });
+        });
+    }
+    
+    var setupInput = function() {
+        $("#run_simulation").click(function() {
+            setErrorMessage('');
+            var iter = $("#iterations").val();
+            var players = $("#player_count").val();
+            if (!iter || isNaN(iter * 1)) {
+                setErrorMessage("Iterations is not a number.");
+                return false;
+            }
+            if (!players || isNaN(players * 1)) {
+                setErrorMessage("Players is not a number.");
+                return false;
+            }
+            iter = iter * 1;
+            players = players * 1;
+            if (iter < 1) {
+                setErrorMessage("Min Iterations is 1.");
+                return false;
+            }
+            if (players > 22) {
+                setErrorMessage("Max Players is 22.");
+                return false;
+            }
+            if (players < 2) {
+                setErrorMessage("Min Players is 2.");
+                return false;
+            }
+            
+            runSimulation(iter, players);
+            return false;
+        });
+    };
+    
+    var setErrorMessage = function(message) {
+        $("#error_message").text(message);
+    };
+    
+    var runSimulation = function(iterations, numberOfPlayers) {
+        console.log("Running simulation of " + iterations + " hands with " + numberOfPlayers + " players");
+        var timeStart = new Date().getTime(), timeEnd;
+        var results = setupGradeMatrix(), resultsOrder = [];
+        var pockets = dim([numberOfPlayers, 2], undefined);
+        var burn = [], flop = [], turn, river;
+        var hands = [];
+        var handDef = {};
+        var handEntry = {};
+        var iter, i, winningRank, grade1, grade2, cellId, cellText, result, winPercent;
+        var deck = TYPES.deck();
+        
+        for (iter = 0; iter < iterations; iter++) {
+            deck.shuffle();
+            for(i = 0; i < numberOfPlayers; i++) {
+                pockets[i][0] = deck.draw();
+                pockets[i][1] = deck.draw();
+            }
+            burn[0] = deck.draw();
+            flop[0] = deck.draw();
+            flop[1] = deck.draw();
+            flop[2] = deck.draw();
+            burn[1] = deck.draw();
+            turn = deck.draw();
+            burn[2] = deck.draw();
+            river = deck.draw();
+            
+            winningRank = 2000000;
+            for(i = 0; i < numberOfPlayers; i++) {
+                handDef.hole = pockets[i];
+                handDef.flop = flop;
+                handDef.turn = turn;
+                handDef.river = river;
+                handEntry = {
+                    hand: TYPES.hand(handDef),
+                    hole: handDef.hole,
+                }
+                hands[i] = handEntry;
+                if (handEntry.hand.getRank() < winningRank) {
+                    winningRank = handEntry.hand.getRank();
+                }
+            }
+            
+            for (i = 0; i < numberOfPlayers; i++) {
+                if (hands[i].hole[0].isSuitedWith(hands[i].hole[1])) {
+                    if (hands[i].hole[0].isgt(hands[i].hole[1])) {
+                        grade1 = hands[i].hole[0].getGradeChar();
+                        grade2 = hands[i].hole[1].getGradeChar();
+                    }
+                    else {
+                        grade1 = hands[i].hole[1].getGradeChar();
+                        grade2 = hands[i].hole[0].getGradeChar();
+                    }
+                }
+                else {
+                    if (hands[i].hole[0].isgt(hands[i].hole[1])) {
+                        grade1 = hands[i].hole[1].getGradeChar();
+                        grade2 = hands[i].hole[0].getGradeChar();
+                    }
+                    else {
+                        grade1 = hands[i].hole[0].getGradeChar();
+                        grade2 = hands[i].hole[1].getGradeChar();
+                    }
+                }
+                
+                results[grade1][grade2].played++;
+                if (hands[i].hand.getRank() === winningRank) {
+                    results[grade1][grade2].wins++;
+                }
+            }
+            
+            for(i = 0; i < numberOfPlayers; i++) {
+                deck.returnCard(hands[i].hole[0]);
+                deck.returnCard(hands[i].hole[1]);
+            }
+            deck.returnCard(burn[0]);
+            deck.returnCard(burn[1]);
+            deck.returnCard(burn[2]);
+            deck.returnCard(flop[0]);
+            deck.returnCard(flop[1]);
+            deck.returnCard(flop[2]);
+            deck.returnCard(turn);
+            deck.returnCard(river);
+        }
+        
+        grades.forEach(function(grade1) {
+            grades.forEach(function(grade2) {
+                result = results[grade1][grade2];
+                cellId = result.suited ? 'suited_' + grade1 + grade2 : grade2 + grade1;
+                winPercent = result.wins / result.played * 100;
+                cellText = result.played > 0 ? result.wins + ' / ' + result.played + ' = ' + winPercent.toFixed(2) : '';
+                $("#" + cellId).text(cellText);
+                if (result.played > 0) {
+                    resultsOrder.push({
+                        "hand": result.suited ? grade1 + grade2 + ' suited' : grade2 + grade1,
+                        "winPercent": winPercent,
+                    });
+                }
+            });
+        });
+        resultsOrder.sort(function(a, b) {
+            return b.winPercent - a.winPercent;
+        });
+        $("#ranks").find(".new_rank_row").each(function(i, ele) {
+            $(ele).remove();
+        });
+        resultsOrder.forEach(addRankToTable);
+        timeEnd = new Date().getTime();
+        runTime = (timeEnd - timeStart) / 1000;
+        $("#run_time").text(runTime + ' seconds');
+        console.log("Done simulating " + iterations + " hands with " + numberOfPlayers + " players. It took " + runTime + " seconds.");
+    };
+    
+    var setupGradeMatrix = function() {
+        var retval = {};
+        grades.forEach(function(grade1) {
+            retval[grade1] = {};
+            var right = false;
+            grades.forEach(function(grade2) {
+                retval[grade1][grade2] = {
+                    played: 0,
+                    wins: 0,
+                    suited: right,
+                };
+                if (grade1 === grade2) {
+                    right = true;
+                }
+            });
+        });
+        return retval;
+    };
+    
+    var addRankToTable = function(entry, index) {
+        var newRow = $("#rank_row_to_copy").clone();
+        newRow.removeAttr("id");
+        newRow.addClass("new_rank_row");
+        newRow.find(".rank").text(index + 1);
+        newRow.find(".hand").text(entry.hand);
+        newRow.find(".win_percent").text(entry.winPercent.toFixed(4));
+        $("#ranks").append(newRow);
+        newRow.show();
+    };
+</script>
+</body>
+</html>

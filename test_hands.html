@@ -1,0 +1,163 @@
+<html>
+<head>
+<title>Test Hands</title>
+<!-- This tests a set of hands and give a way to easily test other hands. -->
+<script src="jquery-3.1.1.min.js"></script>
+<script src="SpicyLibrary.js"></script>
+<script src="card.js"></script>
+<script src="deck.js"></script>
+<script src="hand.js"></script>
+<style>
+.cards {
+    font-family: "Lucida Console", Monaco, monospace;
+}
+#hands {
+    border-collapse: collapse;
+}
+#hands, #hands th, #hands td {
+    border: 1px solid grey;
+    padding: 2px 5px 2px 5px;
+}
+#main_input {
+    border: 1px solid black;
+    margin: 10px 0px 100px 0px;
+    padding: 5px 10px 10px 10px;
+    display: inline-block;
+}
+.card_input {
+    width: 25px;
+    margin: 0px 3px 0px 3px;
+    text-align: center;
+}
+#test_hand {
+    margin-left: 3px;
+}
+</style>
+</head>
+<body>
+<table id="hands">
+    <thead>
+        <tr>
+            <th class="all_cards">Cards</th>
+            <th class="hand_name">Hand Name</th>
+            <th class="hand_rank">Hand Rank</th>
+            <th class="hand_straightFlush">Straight Flush</th>
+            <th class="hand_fourOfAKind">Four of a Kind</th>
+            <th class="hand_fullHouse">Full House</th>
+            <th class="hand_flush">Flush</th>
+            <th class="hand_straight">Straight</th>
+            <th class="hand_threeOfAKind">Three of a Kind</th>
+            <th class="hand_twoPair">Two Pair</th>
+            <th class="hand_pair">Pair</th>
+            <th class="hand_highCard">High Card</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr id="hand_row_to_copy" class="hand_row" style="display: none;">
+            <td class="cards all_cards"></td>
+            <td class="hand_name"></td>
+            <td class="hand_rank"></td>
+            <td class="cards hand_straightFlush"></td>
+            <td class="cards hand_fourOfAKind"></td>
+            <td class="cards hand_fullHouse"></td>
+            <td class="cards hand_flush"></td>
+            <td class="cards hand_straight"></td>
+            <td class="cards hand_threeOfAKind"></td>
+            <td class="cards hand_twoPair"></td>
+            <td class="cards hand_pair"></td>
+            <td class="cards hand_highCard"></td>
+        </tr>
+    </tbody>
+</table>
+<fieldset id="main_input">
+    <legend>New Hand</legend>
+    <input type="text" id="card1" class="card_input" maxlength="2" />
+    <input type="text" id="card2" class="card_input" maxlength="2" />
+    <input type="text" id="card3" class="card_input" maxlength="2" />
+    <input type="text" id="card4" class="card_input" maxlength="2" />
+    <input type="text" id="card5" class="card_input" maxlength="2" />
+    <input type="text" id="card6" class="card_input" maxlength="2" />
+    <input type="text" id="card7" class="card_input" maxlength="2" />
+    <button type="button" id="test_hand">Test Hand</button>
+</div>
+<script type="text/javascript">
+    $(document).ready(function() {
+        var hands = [
+            TYPES.hand(["AS", "KS", "TS", "QS", "2D", "3D", "JS"]),   //Royal
+            TYPES.hand(["5D", "TC", "8C", "3D", "9C", "6C", "7C"]),   //Straight Flush - mid
+            TYPES.hand(["5D", "AC", "2C", "3D", "3C", "4C", "5C"]),   //Straight Flush - worst
+            TYPES.hand(["AS", "AC", "2C", "3D", "KC", "AD", "AH"]),   //Four of a Kind - best
+            TYPES.hand(["8C", "8S", "8D", "9H", "8H", "AH", "2S"]),   //Four of a Kind - mid
+            TYPES.hand(["2S", "2C", "2D", "3D", "3C", "3H", "2H"]),   //Four of a Kind - worst
+            TYPES.hand(["AS", "AD", "KS", "KD", "AH", "KH", "QH"]),   //Full House - best
+            TYPES.hand(["5D", "5C", "7C", "3D", "7S", "TC", "5H"]),   //Full House - mid
+            TYPES.hand(["3C", "3H", "3S", "2C", "2D", "4S", "5D"]),   //Full House - mid (worst 3s full)
+            TYPES.hand(["2C", "2H", "2S", "AC", "AD", "5S", "5D"]),   //Full House - mid (best 2s full)
+            TYPES.hand(["2S", "3C", "3S", "4H", "5D", "2D", "2H"]),   //Full House - worst
+            TYPES.hand(["8S", "9C", "3S", "JC", "QC", "KC", "AC"]),   //Flush - best
+            TYPES.hand(["9C", "6C", "4D", "4C", "JC", "AS", "AC"]),   //Flush - mid
+            TYPES.hand(["7C", "8D", "TS", "7S", "QS", "JS", "9S"]),   //Flush - mid (and straight)
+            TYPES.hand(["5S", "2S", "3S", "4S", "7S", "JD", "QD"]),   //Flush - worst
+            TYPES.hand(["AS", "JD", "KC", "QH", "TS", "9D", "8C"]),   //Straight - best
+            TYPES.hand(["5C", "6D", "7H", "8S", "9C", "TD", "JC"]),   //Straight - mid
+            TYPES.hand(["AS", "2D", "3C", "4H", "5S", "TD", "JC"]),   //Straight - worst
+            TYPES.hand(["2S", "3C", "KD", "QS", "AC", "AD", "AH"]),   //Three of a Kind - best
+            TYPES.hand(["2S", "3C", "2D", "4C", "2H", "5C", "JC"]),   //Three of a Kind - mid
+            TYPES.hand(["2S", "2C", "3D", "4H", "5C", "2H", "7D"]),   //Three of a Kind - worst
+            TYPES.hand(["AS", "KS", "AC", "KC", "QD", "JD", "9D"]),   //Two Pair - best
+            TYPES.hand(["5C", "8D", "AS", "AD", "TH", "5S", "2S"]),   //Two Pair - mid
+            TYPES.hand(["2S", "2D", "3S", "3D", "4S", "5D", "7C"]),   //Two Pair - worst
+            TYPES.hand(["AS", "KC", "JH", "QD", "9S", "7S", "AC"]),   //One Pair - best
+            TYPES.hand(["AC", "JH", "JD", "TH", "3C", "4S", "8S"]),   //One Pair - mid
+            TYPES.hand(["3S", "4C", "5S", "7H", "8D", "2C", "2H"]),   //One Pair - worst
+            TYPES.hand(["AS", "KS", "QS", "JS", "9C", "8C", "7C"]),   //High Card - best
+            TYPES.hand(["4H", "8H", "9C", "JD", "QD", "5H", "AS"]),   //High Card - mid
+            TYPES.hand(["2S", "3C", "4H", "5D", "7S", "8D", "9H"]),   //High Card - worst
+        ];
+        hands.forEach(function(hand, index) {
+            addHandToTable(hand);
+        });
+        $("#test_hand").click(function() {
+            var cards = [];
+            var i, hand, card, card_id;
+            for (i = 1; i <= 7; i++) {
+                card_id = "#card" + i;
+                card = $(card_id).val().toUpperCase();
+                $(card_id).val(card);
+                if (card.length == 2) {
+                    cards.push(card);
+                }
+            }
+            if (cards.length == 7) {
+                addHandToTable(TYPES.hand(cards));
+            } else {
+                console.log("There are only " + cards.length + " cards, and there needs to be 7");
+            }
+        });
+    });
+    
+    var hand_types = ["straightFlush", "fourOfAKind", "fullHouse", "flush", 
+                      "straight", "threeOfAKind", "twoPair", "pair", "highCard"];
+                      
+    var addHandToTable = function(hand) {
+        var newRow = $("#hand_row_to_copy").clone();
+        newRow.removeAttr("id");
+        newRow.find(".all_cards").text(hand.getAllCardsString());
+        newRow.find(".hand_name").text(hand.getHandName());
+        newRow.find(".hand_rank").text(hand.getRank());
+        hand_types.forEach(function(handType) {
+            var handCell = newRow.find(".hand_" + handType);
+            handCell.text(hand.getCardsPlayedString(handType));
+            if (hand.isHandType(handType)) {
+                handCell.css("background-color", "#99FF99")
+            }
+            else {
+                handCell.css("background-color", "#FFCCDD")
+            }
+        });
+        $("#hands").append(newRow);
+        newRow.show();
+    };
+</script>
+</body>
+</html>
